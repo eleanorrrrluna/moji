@@ -1,0 +1,13 @@
+{
+  "name": "moji",
+  "private": true,
+  "version": "0.1.0",
+  "description": "moji 墨迹 — a calm AI reflective journal",
+  "scripts": {
+    "dev": "concurrently -n server,client -c yellow,cyan \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

@@ -1,0 +1,504 @@
+/* —— moji 墨迹 · 水红与苍筤：粉天、绿水、佛手黄月（UI v2） —— */
+
+:root {
+  --shuihong: #f1c4cd; /* 水红：天空 RGB(241,196,205) */
+  --canglang: #93bdad; /* 苍筤：水面 RGB(147,189,173) */
+  --foshou: #fed71a; /* 佛手黄：月亮与最重要的动作 RGB(254,215,26) */
+  --taoyao: #fdcecc; /* 桃夭粉：月光雨 #FDCECC */
+  --bijian: #f4ec92; /* 比肩：月光雨 #F4EC92 */
+  --ink: #310f10; /* 豆色：正文文字 RGB(49,15,16)，永不用纯黑 */
+  --vanilla: #f3e3b2; /* 香草色：MOJI 字标 */
+  --olive: #46462a; /* 深绿色：Plain / Poetic */
+  --earth: #8a7156; /* 暖棕：留给个别安静的细节 */
+  --deep-sage: #4e7a68; /* 深苍筤：心情印、水面上的小字 */
+  --rose: #b0685c; /* 深玫瑰：错误提示 */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  /* 水红渐入苍筤，中段是像色卡里那样雾蒙蒙的柔和过渡（回信屏/休息屏直接用这层底） */
+  background: linear-gradient(
+      180deg,
+      #f6d5db 0%,
+      var(--shuihong) 38%,
+      #dcc9cb 52%,
+      #b8c6bc 64%,
+      var(--canglang) 78%,
+      #7ea795 100%
+    )
+    fixed;
+  color: var(--ink);
+  font-family: 'Iowan Old Style', Palatino, 'Palatino Linotype', Georgia, 'Songti SC', 'Noto Serif SC', serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 宣纸质感：云絮 + 纤维 + 细颗粒三层，无缝平铺；浅底上用 multiply 让纸筋微微压深 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='840' height='840'%3E%3Cfilter id='cloud' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.011 0.016' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.32 0 0 0 0 0.29 0 0 0 0 0.26 0 0 0 0.055 0'/%3E%3C/filter%3E%3Cfilter id='fiber' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9 0.03' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.32 0 0 0 0 0.28 0 0 0 0.035 0'/%3E%3C/filter%3E%3Cfilter id='grain' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.28 0 0 0 0 0.25 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='840' height='840' filter='url(%23cloud)'/%3E%3Crect width='840' height='840' filter='url(%23fiber)'/%3E%3Crect width='840' height='840' filter='url(%23grain)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+  z-index: 10;
+}
+
+#root,
+.app {
+  min-height: 100dvh;
+}
+
+.app {
+  position: relative;
+  z-index: 1; /* 内容在月夜 canvas 之上、宣纸纹理之下 */
+  max-width: 660px;
+  margin: 0 auto;
+  padding: clamp(20px, 5vh, 48px) clamp(20px, 6vw, 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* WebGL 水面（休息屏）：贴在视口底部的海域，盖在 2D 海之上、内容之下 */
+.water-sim {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 28%; /* 与 HORIZON 0.72 对应 */
+  z-index: -1; /* 与主画布同层，DOM 在后 → 画在其上 */
+  pointer-events: none;
+}
+
+/* 场景画布：铺满全屏，垫在一切内容底下 */
+.moon-scene {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%; /* 高分屏下画布内部像素更多，显示尺寸必须锁回视口大小 */
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* —— 场景屏（welcome/home）：动效占左半边，文字让到右半边 —— */
+@media (min-width: 900px) {
+  .app.scene-on {
+    margin-left: 50vw;
+    margin-right: clamp(20px, 4vw, 64px);
+    max-width: 560px;
+  }
+}
+
+/* 场景屏内容靠上排，落在水红天空区 */
+.scene-on main.page {
+  justify-content: flex-start;
+  padding-top: 7vh;
+}
+
+/* 场景屏写字框稍矮一点，让 plain/poetic 和按钮也留在天空里 */
+.scene-on .entry-input {
+  min-height: 7em;
+}
+
+/* —— 字标：无底座，Aboreto 果冻字直接落在天上。
+   固定在视口左上角：四屏位置统一，也永远不会叠到月亮身上 —— */
+.wordmark {
+  position: fixed;
+  top: clamp(18px, 4vh, 40px);
+  left: clamp(20px, 3vw, 44px);
+  z-index: 2;
+  font-family: 'Aboreto', 'Cormorant', Georgia, serif;
+  font-weight: 400; /* Aboreto 只有一个字重 */
+  font-size: 1.4rem;
+  letter-spacing: 0.28em;
+}
+
+/* 果冻字（PS 教程配方的 CSS 移植）：白高光→#E6FFBC→#A9E05B 从上往下灌进字里，
+   底下垫一层 #5A850D 的果冻投影，字面再压一丝白色反光 */
+.wordmark-jelly {
+  color: transparent;
+  background-image: linear-gradient(180deg, #ffffff 12%, #e6ffbc 40%, #a9e05b 78%, #8bc23c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.95)) drop-shadow(0 2px 2px rgba(90, 133, 13, 0.55))
+    drop-shadow(0 4px 8px rgba(90, 133, 13, 0.25));
+}
+
+/* —— 翻页（保留：buttery page-turn） —— */
+main.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  animation: page-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateX(26px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+
+/* —— 大字问候：Aboreto（Eleanor 参考图第三张的原版字体，开源）——
+   时装海报式的纤细大写显示体，字距放宽让它呼吸 */
+.greeting {
+  font-family: 'Aboreto', 'Cormorant', 'Iowan Old Style', Georgia, 'Songti SC', 'Noto Serif SC', serif;
+  font-size: clamp(1.7rem, 4.2vw, 2.5rem);
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0.06em;
+}
+
+/* 副问候：Cormorant（Afrah 的开源近亲：极简纤细、气质干净） */
+.subgreeting {
+  font-family: 'Cormorant', 'Iowan Old Style', Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: color-mix(in srgb, var(--ink) 68%, transparent);
+  letter-spacing: 0.03em;
+}
+
+/* —— 输入 —— */
+.name-input,
+.entry-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  /* 底线做得更淡更隐形，写字的人几乎感觉不到框 */
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  font: inherit;
+  font-family: 'Cormorant', 'Iowan Old Style', Georgia, serif; /* 与副问候同款纤细衬线 */
+  font-weight: 300;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.name-input:focus,
+.entry-input:focus {
+  border-bottom-color: color-mix(in srgb, var(--ink) 40%, transparent);
+}
+
+.name-input::placeholder,
+.entry-input::placeholder {
+  color: color-mix(in srgb, var(--ink) 24%, transparent);
+}
+
+.name-input {
+  font-size: 1.5rem; /* Cormorant 字面偏小，字号补一档 */
+  padding: 0.4em 0;
+  max-width: 30ch;
+}
+
+.entry-input {
+  font-size: 1.3rem;
+  line-height: 1.8;
+  min-height: 9em;
+  resize: none;
+}
+
+/* —— 动作区 —— */
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.tones {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+}
+
+.dot {
+  color: var(--earth);
+  opacity: 0.6;
+}
+
+.tone,
+.quiet {
+  font: inherit;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  background: none;
+  border: none;
+  padding: 0.2em 0.05em;
+  color: color-mix(in srgb, var(--ink) 60%, transparent);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+
+/* Plain / Poetic：深绿色 */
+.tone {
+  color: color-mix(in srgb, var(--olive) 72%, transparent);
+}
+
+.tone:hover,
+.quiet:hover {
+  color: var(--ink);
+}
+
+.tone:hover {
+  color: var(--olive);
+}
+
+.tone.selected {
+  color: var(--olive);
+  border-bottom-color: #d9b520; /* 佛手黄压深一档，浅底上才看得清 */
+}
+
+/* 佛手黄只给这一个按钮（the one action that matters），呼应月亮。
+   液态玻璃：更透的黄、更重的磨砂、白描边、顶部一条流动高光——像一滴凝住的琉璃 */
+.primary {
+  position: relative;
+  overflow: hidden;
+  font: inherit;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  color: #4a3d14;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.5), rgba(254, 215, 26, 0.28) 55%, rgba(254, 215, 26, 0.45));
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+  padding: 0.62em 1.7em;
+  cursor: pointer;
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: 0 10px 30px rgba(160, 130, 30, 0.18), 0 2px 6px rgba(160, 130, 30, 0.1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.9), inset 0 -8px 16px rgba(255, 255, 255, 0.25);
+  transition: transform 0.15s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* 玻璃顶面的高光反射：上缘一弯亮泽 */
+.primary::before {
+  content: '';
+  position: absolute;
+  inset: 2px 8px auto 8px;
+  height: 46%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 36px rgba(160, 130, 30, 0.26), 0 2px 6px rgba(160, 130, 30, 0.12),
+    inset 0 1px 1px rgba(255, 255, 255, 1), inset 0 -8px 16px rgba(255, 255, 255, 0.3);
+}
+
+.primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.error {
+  font-size: 0.95rem;
+  color: var(--rose);
+}
+
+/* —— 签文（v1.1）：宣纸水签，像鱼一样从左下游到中偏右 ——
+   双层动画：外层（rise）只管位移，一条曲线游到位；内层（slip）持续轻摆。
+   两者疊加 = 流畅的游动；摆动永不停，到位后就是浮在水上的漾 */
+.fortune-rise {
+  align-self: flex-end; /* 停在中偏右：给左边的月亮让路 */
+  margin-right: clamp(0px, 8vw, 110px);
+  width: min(24em, 100%);
+  animation: rise-glide 3s cubic-bezier(0.32, 0.72, 0.36, 1) both,
+    rise-bob 6s ease-in-out 3s infinite;
+}
+
+/* 隐形 → 显形：透明度和虚焦贯穿整段游动，像从水汽里慢慢凝出来 */
+@keyframes rise-glide {
+  0% {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translate(-34vw, 55vh);
+  }
+  55% {
+    opacity: 0.55;
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes rise-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.fortune-slip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.6rem 1.8rem 1.3rem;
+  animation: slip-sway 3.6s ease-in-out infinite alternate; /* 从出发那一刻起持续轻摆 */
+}
+
+/* 纸本体放在伪元素上：月光绡 · 圆角极简卡（Eleanor 定稿 F1）——
+   半透的纱泛着微光，身后的天与水朦胧可见；大圆角 + 发丝白边，
+   与 Reflect 按钮、心情印同一个"圆润玻璃"家族 */
+.fortune-slip::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: linear-gradient(150deg, rgba(255, 252, 240, 0.5), rgba(252, 244, 230, 0.34) 55%, rgba(255, 240, 214, 0.44));
+  backdrop-filter: blur(10px) saturate(125%); /* 纱后面的世界朦胧可见 */
+  -webkit-backdrop-filter: blur(10px) saturate(125%);
+  box-shadow: 0 0 30px rgba(255, 240, 190, 0.45), 0 10px 26px rgba(49, 15, 16, 0.07),
+    inset 0 0 26px rgba(255, 248, 220, 0.4); /* 边缘晕出淡淡月色 */
+}
+
+@keyframes slip-sway {
+  from {
+    transform: rotate(1.3deg);
+  }
+  to {
+    transform: rotate(-1.7deg);
+  }
+}
+
+.fortune-slip .reflection-text {
+  font-size: 1.05rem;
+  line-height: 1.9;
+}
+
+/* —— 心情印：液态玻璃小胶囊，端端正正落下来 —— */
+.mood-chip {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  padding: 0.45em 1.1em;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: color-mix(in srgb, var(--ink) 82%, transparent);
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  box-shadow: 0 6px 18px rgba(49, 15, 16, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  animation: stamp-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s both;
+}
+
+.mood-emoji {
+  font-size: 1.15em;
+}
+
+.mood-word {
+  text-transform: capitalize; /* 心情词也首字母大写（后端返回的是小写） */
+}
+
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* —— 回信：墨迹渗纸，一句一句浮现（保留 ink-soak reveal） —— */
+.reflection-text {
+  font-size: 1.32rem;
+  line-height: 2;
+  letter-spacing: 0.015em;
+  max-width: 34em;
+}
+
+.ink-line {
+  opacity: 0;
+  animation: ink-soak 1.5s ease both;
+}
+
+@keyframes ink-soak {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+  }
+  60% {
+    opacity: 0.9;
+    filter: blur(1px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* —— 收尾两个安静的选项 —— */
+.closing {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  opacity: 0;
+  animation: fade-up 1s ease both;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* —— 页脚（safety line）：豆色，淡一点 —— */
+.footer {
+  margin-top: auto;
+  padding-top: 2.5rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
+}
+
+/* 尊重系统的“减少动态效果”设置 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+  }
+}

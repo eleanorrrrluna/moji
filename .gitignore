@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+
+# local database — personal journal entries never go to git
+server/data/
+
+# secrets
+.env
+.env.*
+
+# local runtime log from moji.sh
+.moji.log
+
+# personal interview prep — stays out of the public repo
+docs/interview-story.md
+
+# macOS
+.DS_Store
+
+# 本地 UI 备份（改样式前的还原点）
+.ui-backup-*/
+
+# 版本快照（git 之前的手动 tag）
+.snapshot-*/
+
+# 本地开发工具配置（预览面板等）
+.claude/
