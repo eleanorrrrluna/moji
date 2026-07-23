@@ -1,0 +1,52 @@
+# =============================================================================
+# GitHub Actions CI —— push 或 PR 时自动验证 Docker 镜像还能构建
+# 官方文档：https://docs.github.com/en/actions
+# =============================================================================
+
+name: CI
+
+# —— 什么时候跑这条流水线 ——
+on:
+  # push 到任何分支时跑（现在只有 main，以后有 dev 分支也自动覆盖）
+  push:
+    branches: ["**"]
+  # 有人开 pull request 时也跑（v1 单人开发暂时用不上，但留着无成本）
+  pull_request:
+    branches: [main]
+  # 允许在 GitHub 网页手动点按钮跑一次（调试时方便）
+  workflow_dispatch:
+
+# —— 流水线由若干 job 组成，job 之间可以并行 ——
+jobs:
+  build:
+    # 用 GitHub 免费提供的 Ubuntu 虚拟机跑
+    # （每月 2000 分钟免费，v1 用量绰绰有余）
+    runs-on: ubuntu-latest
+
+    # —— 一个 job 由若干 step 顺序执行 ——
+    steps:
+      # 1) 把仓库代码拉到虚拟机里
+      #    actions/checkout 是官方 action，等于 git clone 的 CI 版
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2) 启动 Buildx —— Docker 的现代构建器，支持缓存、多平台
+      #    没这一步 docker build 也能跑，但缓存会更聪明、构建更快
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3) 真·构建镜像
+      #    这是这条 CI 的核心动作：证明 Dockerfile 没坏、依赖装得下来、
+      #    前端能编译成功、better-sqlite3 能在 Linux 上编译成功。
+      #
+      #    load: false —— 我们这一版不需要把镜像装载出来跑（只验证能否构建）
+      #    cache-from/cache-to —— 用 GitHub Actions 自带的缓存加速二次构建
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: false
+          tags: moji:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
