@@ -1,46 +1,31 @@
 # =============================================================================
-# GitHub Actions CI —— push 或 PR 时自动验证 Docker 镜像还能构建
-# 官方文档：https://docs.github.com/en/actions
+# GitHub Actions CI/CD
+#   Job 1 (build)  —— 每次 push 都跑，验证 Docker 镜像能构建
+#   Job 2 (deploy) —— 只有 main 分支的 push、build 绿了才跑：SSH 到 EC2 自动部署
 # =============================================================================
 
-name: CI
+name: CI/CD
 
-# —— 什么时候跑这条流水线 ——
 on:
-  # push 到任何分支时跑（现在只有 main，以后有 dev 分支也自动覆盖）
   push:
     branches: ["**"]
-  # 有人开 pull request 时也跑（v1 单人开发暂时用不上，但留着无成本）
   pull_request:
     branches: [main]
-  # 允许在 GitHub 网页手动点按钮跑一次（调试时方便）
   workflow_dispatch:
 
-# —— 流水线由若干 job 组成，job 之间可以并行 ——
 jobs:
+  # -----------------------------------------------------------------------------
+  # Job 1: Build —— 验证 Dockerfile 依然能构建（每次 push 都跑，包括 PR、别的分支）
+  # -----------------------------------------------------------------------------
   build:
-    # 用 GitHub 免费提供的 Ubuntu 虚拟机跑
-    # （每月 2000 分钟免费，v1 用量绰绰有余）
     runs-on: ubuntu-latest
-
-    # —— 一个 job 由若干 step 顺序执行 ——
     steps:
-      # 1) 把仓库代码拉到虚拟机里
-      #    actions/checkout 是官方 action，等于 git clone 的 CI 版
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2) 启动 Buildx —— Docker 的现代构建器，支持缓存、多平台
-      #    没这一步 docker build 也能跑，但缓存会更聪明、构建更快
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 3) 真·构建镜像
-      #    这是这条 CI 的核心动作：证明 Dockerfile 没坏、依赖装得下来、
-      #    前端能编译成功、better-sqlite3 能在 Linux 上编译成功。
-      #
-      #    load: false —— 我们这一版不需要把镜像装载出来跑（只验证能否构建）
-      #    cache-from/cache-to —— 用 GitHub Actions 自带的缓存加速二次构建
       - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
@@ -50,3 +35,52 @@ jobs:
           tags: moji:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # -----------------------------------------------------------------------------
+  # Job 2: Deploy —— 自动部署到 EC2
+  # 触发条件（三个 AND）：
+  #   1. Job 1 (build) 成功                    → needs: build
+  #   2. 事件类型是 push（不是 PR）            → github.event_name == 'push'
+  #   3. push 到 main 分支（不是 feature 分支） → github.ref == 'refs/heads/main'
+  #
+  # 三条一起保护你：只有"main 分支上代码构建成功"才真的动 EC2。
+  # -----------------------------------------------------------------------------
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to EC2 via SSH
+        # appleboy/ssh-action —— 社区最广用的 SSH action，包装了 SSH 客户端
+        uses: appleboy/ssh-action@v1
+        with:
+          # EC2 的 Elastic IP（对公网可见，不算 secret）
+          host: 15.134.110.215
+          # SSH 用户名（Ubuntu AMI 默认）
+          username: ubuntu
+          # 私钥从 GitHub Secrets 拉，永远不出现在日志里
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # 任一命令失败立刻退出（默认是所有命令都跑完才判断整体成败）
+          script_stop: true
+          # 真正在 EC2 上跑的命令块
+          script: |
+            set -e
+            echo "=== Pulling latest code ==="
+            cd moji
+            git pull
+
+            echo "=== Building image ==="
+            docker compose build
+
+            echo "=== Restarting containers ==="
+            docker compose up -d
+
+            echo "=== Waiting for services ==="
+            sleep 5
+
+            echo "=== Health check ==="
+            # -f 参数让 curl 在 HTTP 4xx/5xx 时返回非零 exit code
+            # 从而让整个 workflow 显示失败
+            curl -f http://localhost:3611/api/health
+            echo ""
+            echo "✓ Deploy successful"
