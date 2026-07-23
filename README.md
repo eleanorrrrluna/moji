@@ -1,6 +1,8 @@
 # MOJI
 
-A calm, minimal AI reflective journal. You type a few messy sentences about your day, pick a tone — **plain** or **poetic** — and MOJI replies with a short, warm reflection and a mood tag, like a note from a reliable friend. No accounts, no streaks, no blank-page pressure.
+**Live at [mojimoonee.com](https://mojimoonee.com)** — a calm, minimal AI reflective journal.
+
+You type a few messy sentences about your day, pick a tone — **plain** or **poetic** — and MOJI replies with a short, warm reflection and a mood tag, like a note from a reliable friend. No accounts, no streaks, no blank-page pressure.
 
 *Message goes up to the moon. The moon reads. A water letter floats back.*
 
@@ -29,8 +31,8 @@ Then open http://localhost:5173.
 2. ✅ **Real reflections** — Anthropic Claude API (Haiku) as the default provider
 3. ✅ **Docker** — single container serving the built client from Express
 4. ✅ **CI** — GitHub Actions verifies the Docker image builds on every push
-5. ✅ **Deploy** — AWS EC2 (Sydney), public URL
-6. ⏳ **Domain + HTTPS** — custom domain with Let's Encrypt via Caddy
+5. ✅ **Deploy** — AWS EC2 (Sydney) with Docker
+6. ✅ **Domain + HTTPS** — Cloudflare DNS + Caddy reverse proxy + Let's Encrypt auto-renewal
 
 ## Future ideas (v2+)
 
