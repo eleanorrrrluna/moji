@@ -55,11 +55,11 @@ export default function Home({ name, onReflection }) {
           </button>
         </div>
         <button className="primary" onClick={submit} disabled={!entry.trim() || status === 'sending'}>
-          {status === 'sending' ? 'The ink is settling…' : 'Reflect'}
+          {status === 'sending' ? 'the moon is reading…' : 'Reflect'}
         </button>
       </div>
 
-      {status === 'error' && <p className="error">The ink didn't take — try once more.</p>}
+      {status === 'error' && <p className="error">the network's under the weather — the moon's on the way to check on it.</p>}
     </div>
   );
 }

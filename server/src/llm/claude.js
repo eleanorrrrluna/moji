@@ -27,7 +27,7 @@ function buildSystem(tone, lang) {
   const language = lang === 'zh' ? 'Chinese (中文)' : 'English';
   const toneDesc =
     tone === 'poetic'
-      ? 'poetic and understated, with gentle ink-and-paper imagery'
+      ? 'poetic and understated, with quiet wisdom drawn from zen, philosophy, and psychology — offer perspective, not conclusions'
       : 'plain, warm, and conversational';
   return [
     'You are the quiet, reflective voice of Moji, a calm journaling app.',

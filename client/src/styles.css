@@ -1,4 +1,4 @@
-/* —— moji 墨迹 · 水红与苍筤：粉天、绿水、佛手黄月（UI v2） —— */
+/* —— MOJI · 月夜海面：粉天、绿水、佛手黄月（v2） —— */
 
 :root {
   --shuihong: #f1c4cd; /* 水红：天空 RGB(241,196,205) */
@@ -6,7 +6,7 @@
   --foshou: #fed71a; /* 佛手黄：月亮与最重要的动作 RGB(254,215,26) */
   --taoyao: #fdcecc; /* 桃夭粉：月光雨 #FDCECC */
   --bijian: #f4ec92; /* 比肩：月光雨 #F4EC92 */
-  --ink: #310f10; /* 豆色：正文文字 RGB(49,15,16)，永不用纯黑 */
+  --text: #310f10; /* 豆色：正文文字 RGB(49,15,16)，永不用纯黑 */
   --vanilla: #f3e3b2; /* 香草色：MOJI 字标 */
   --olive: #46462a; /* 深绿色：Plain / Poetic */
   --earth: #8a7156; /* 暖棕：留给个别安静的细节 */
@@ -37,7 +37,7 @@ body {
       #7ea795 100%
     )
     fixed;
-  color: var(--ink);
+  color: var(--text);
   font-family: 'Iowan Old Style', Palatino, 'Palatino Linotype', Georgia, 'Songti SC', 'Noto Serif SC', serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -177,7 +177,7 @@ main.page {
   font-family: 'Cormorant', 'Iowan Old Style', Georgia, serif;
   font-size: 1.2rem;
   font-weight: 400;
-  color: color-mix(in srgb, var(--ink) 68%, transparent);
+  color: color-mix(in srgb, var(--text) 68%, transparent);
   letter-spacing: 0.03em;
 }
 
@@ -188,23 +188,23 @@ main.page {
   background: transparent;
   border: none;
   /* 底线做得更淡更隐形，写字的人几乎感觉不到框 */
-  border-bottom: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
   font: inherit;
   font-family: 'Cormorant', 'Iowan Old Style', Georgia, serif; /* 与副问候同款纤细衬线 */
   font-weight: 300;
-  color: var(--ink);
+  color: var(--text);
   outline: none;
   transition: border-color 0.3s ease;
 }
 
 .name-input:focus,
 .entry-input:focus {
-  border-bottom-color: color-mix(in srgb, var(--ink) 40%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--text) 40%, transparent);
 }
 
 .name-input::placeholder,
 .entry-input::placeholder {
-  color: color-mix(in srgb, var(--ink) 24%, transparent);
+  color: color-mix(in srgb, var(--text) 24%, transparent);
 }
 
 .name-input {
@@ -247,7 +247,7 @@ main.page {
   background: none;
   border: none;
   padding: 0.2em 0.05em;
-  color: color-mix(in srgb, var(--ink) 60%, transparent);
+  color: color-mix(in srgb, var(--text) 60%, transparent);
   border-bottom: 2px solid transparent;
   cursor: pointer;
   transition: color 0.25s ease, border-color 0.25s ease;
@@ -260,7 +260,7 @@ main.page {
 
 .tone:hover,
 .quiet:hover {
-  color: var(--ink);
+  color: var(--text);
 }
 
 .tone:hover {
@@ -411,7 +411,7 @@ main.page {
   background: rgba(255, 255, 255, 0.35);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  color: color-mix(in srgb, var(--ink) 82%, transparent);
+  color: color-mix(in srgb, var(--text) 82%, transparent);
   font-size: 0.95rem;
   letter-spacing: 0.06em;
   box-shadow: 0 6px 18px rgba(49, 15, 16, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -437,7 +437,7 @@ main.page {
   }
 }
 
-/* —— 回信：墨迹渗纸，一句一句浮现（保留 ink-soak reveal） —— */
+/* —— 回信：一句一句浮现（reveal） —— */
 .reflection-text {
   font-size: 1.32rem;
   line-height: 2;
@@ -445,12 +445,12 @@ main.page {
   max-width: 34em;
 }
 
-.ink-line {
+.reveal-line {
   opacity: 0;
-  animation: ink-soak 1.5s ease both;
+  animation: line-reveal 1.5s ease both;
 }
 
-@keyframes ink-soak {
+@keyframes line-reveal {
   from {
     opacity: 0;
     filter: blur(6px);
@@ -492,7 +492,7 @@ main.page {
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-align: center;
-  color: color-mix(in srgb, var(--ink) 55%, transparent);
+  color: color-mix(in srgb, var(--text) 55%, transparent);
 }
 
 /* 尊重系统的“减少动态效果”设置 */

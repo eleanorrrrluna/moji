@@ -23,7 +23,7 @@ export default function Reflection({ result, onDone }) {
 
         <p className="reflection-text" lang={/[一-鿿]/.test(reflection) ? 'zh' : 'en'}>
           {lines.map((line, i) => (
-            <span key={i} className="ink-line" style={{ animationDelay: `${SLIP_RISE + 0.4 + i * 0.75}s` }}>
+            <span key={i} className="reveal-line" style={{ animationDelay: `${SLIP_RISE + 0.4 + i * 0.75}s` }}>
               {line}{' '}
             </span>
           ))}
