@@ -1,34 +1,62 @@
 # =============================================================================
-# docker compose 编排文件 —— 描述本机怎么把 Moji 容器跑起来。
-# 一条 `docker compose up` 就按这里写的规矩启动。
+# docker compose 编排文件 —— 本机 + EC2 生产环境用同一份
+# 一条 `docker compose up` 起两个容器：
+#   moji   —— 后端 + 前端静态文件
+#   caddy  —— 反向代理 + 自动 HTTPS（Let's Encrypt）
 # =============================================================================
 
 services:
+  # ---- 应用容器 ----
   moji:
-    # 用当前目录的 Dockerfile 构建镜像
     build: .
-    # 给构建出的镜像起个名字，方便下次识别
     image: moji:local
     container_name: moji
 
-    # 端口映射：把容器里的 3611 映射到你 Mac 的 3611
-    # 打开 http://localhost:3611 就能访问
+    # 3611 暴露到宿主机，方便本机 docker 测试直接 curl :3611
+    # EC2 上通过 Security Group 控制公网是否可达（HTTPS 通了后可从 SG 移除 3611）
     ports:
       - "3611:3611"
 
-    # 关键：从你本机的 server/.env 读环境变量注入到容器
-    # 这样 ANTHROPIC_API_KEY 只存在于运行时容器内存里，绝不进镜像、不进 git
+    # 运行时从本机 server/.env 读环境变量（ANTHROPIC_API_KEY 等）
+    # 密钥永远不进镜像、不进 git
     env_file:
       - ./server/.env
 
-    # 持久化：SQLite 数据放到一个 docker 管理的 volume
-    # 容器删了重建，日记还在（挂在 /app/server/data，正好是 db.js 期望的位置）
+    # SQLite 数据挂 volume，容器重建日记不丢
     volumes:
       - moji-data:/app/server/data
 
-    # 意外崩溃自动重启（EC2 上省心）
     restart: unless-stopped
 
-# 声明上面用到的 volume
+  # ---- 反向代理 + HTTPS ----
+  caddy:
+    # 官方 Caddy 镜像 alpine 版，体积小
+    image: caddy:2-alpine
+    container_name: caddy
+
+    # Caddy 监听 80 和 443：
+    #   :80  —— HTTP 请求（Caddy 会自动重定向到 HTTPS，并处理 Let's Encrypt 验证）
+    #   :443 —— HTTPS 请求（拿到证书后走这里）
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      # 把 Caddyfile 塞进容器（只读方式挂载，改 Caddyfile 只需 docker compose restart caddy）
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      # 证书 / 私钥持久化 —— 关键：不持久化会导致每次重启都重新申请证书，触发 Let's Encrypt 频率限制
+      - caddy-data:/data
+      # Caddy 运行时配置的持久化目录
+      - caddy-config:/config
+
+    # 让 caddy 在 moji 之后启动（moji 未 ready 时 caddy 请求会 502，稍后 moji ready 自动恢复）
+    depends_on:
+      - moji
+
+    restart: unless-stopped
+
+# 声明所有命名 volumes
 volumes:
   moji-data:
+  caddy-data:
+  caddy-config:

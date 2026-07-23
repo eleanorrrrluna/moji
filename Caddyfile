@@ -1,0 +1,23 @@
+# =============================================================================
+# Caddyfile —— Caddy 反向代理配置
+# 架构：客户端 (:80/:443) → Caddy → moji 后端容器 (:3611)
+# =============================================================================
+#
+# Caddy 干的两件事：
+#   1. 自动向 Let's Encrypt 申请 HTTPS 证书（首次启动约 20 秒），90 天自动续期
+#   2. 把 https://mojimoonee.com 的请求转发给内网 moji 容器的 :3611
+# =============================================================================
+
+# —— 主域名 ——
+mojimoonee.com {
+	# reverse_proxy = 反向代理
+	# "moji" 是 docker-compose 里的服务名（=容器名），Docker 内网 DNS 自动解析
+	# :3611 是 moji 后端在容器内监听的端口
+	reverse_proxy moji:3611
+}
+
+# —— www 前缀 → 永久重定向到主域名（canonical URL 惯例） ——
+# 好处：搜索引擎不会认为 www.mojimoonee.com 和 mojimoonee.com 是两个网站，权重集中
+www.mojimoonee.com {
+	redir https://mojimoonee.com{uri} permanent
+}
