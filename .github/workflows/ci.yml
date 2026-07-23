@@ -60,9 +60,8 @@ jobs:
           username: ubuntu
           # 私钥从 GitHub Secrets 拉，永远不出现在日志里
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # 任一命令失败立刻退出（默认是所有命令都跑完才判断整体成败）
-          script_stop: true
           # 真正在 EC2 上跑的命令块
+          # 顶上 `set -e` 保证任一命令失败立刻退出（v1 action 无 script_stop 字段）
           script: |
             set -e
             echo "=== Pulling latest code ==="

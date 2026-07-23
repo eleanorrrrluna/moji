@@ -30,8 +30,8 @@ Then open http://localhost:5173.
 1. ✅ **v1 core loop, local** — name → messy words → tone → reflection + mood → auto-saved
 2. ✅ **Real reflections** — Anthropic Claude API (Haiku) as the default provider
 3. ✅ **Docker** — single container serving the built client from Express
-4. ✅ **CI** — GitHub Actions verifies the Docker image builds on every push
-5. ✅ **Deploy** — AWS EC2 (Sydney) with Docker
+4. ✅ **CI/CD** — GitHub Actions: build the Docker image on every push, auto-deploy to EC2 on `main` (SSH + health check)
+5. ✅ **Deploy** — AWS EC2 (Sydney) with Docker + Elastic IP
 6. ✅ **Domain + HTTPS** — Cloudflare DNS + Caddy reverse proxy + Let's Encrypt auto-renewal
 
 ## Future ideas (v2+)
