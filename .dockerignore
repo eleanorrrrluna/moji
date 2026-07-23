@@ -1,0 +1,31 @@
+# —— Docker 构建时的"gitignore" ——
+# 告诉 docker build：把这些文件/目录当空气，别拷进构建上下文。
+# 好处：① 镜像更小、构建更快；② 绝不把本机 node_modules / 密钥 / 私密日记塞进镜像。
+
+# 本机装的依赖：容器里会在构建阶段重新装一份干净的
+node_modules
+**/node_modules
+
+# git 元数据：镜像里用不上
+.git
+.gitignore
+
+# 密钥与本地环境：绝不进镜像，运行时由 docker compose 注入
+.env
+**/.env
+
+# 私密日记数据库：本机的 moji.db 不进镜像，容器里用挂载的 volume（下面 docker-compose 会说）
+server/data
+
+# 各种本地开发副产物 / 备份 / 快照 / 私人材料
+.DS_Store
+.claude
+.moji.log
+.snapshot-*
+.ui-backup-*
+docs/interview-story.md
+
+# Docker 自己的配置也不用进镜像
+Dockerfile
+docker-compose.yml
+.dockerignore
